@@ -38,7 +38,7 @@ Node.prototype.setExpression = function(exp) {
 Node.prototype.getElementsByClassName = function(className) {
 	var that = this
 	var res = []
-	that.class&&that.class.split(/\s+/).forEach(function(splited) {
+	that.class && that.class.split(/\s+/).forEach(function(splited) {
 		if (splited === className) {
 			res.push(that)
 		}
@@ -135,9 +135,9 @@ var attrParser = function(node) {
 	if (node.nodeType === ELEMENTNODE) {
 		exp = node.expression
 		if (exp) {
-			exp = exp.replace(/^<|>$/gim, '')
+			exp = exp.replace(/^<[\s\S]+?\s+|^<[\S]+?>$|>$/gim, '') //去除<if >
+			exp = normalizeAttr(exp)
 			attrExps = exp.split(/\s+/)
-			attrExps.shift()
 			attrExps.reverse()
 			attrExps.forEach(function(fake) {
 				real = fake + " " + real
@@ -163,6 +163,25 @@ var attrParser = function(node) {
 	return node
 }
 
+//将标签的属性规范化
+function normalizeAttr(exp){
+	var res
+	var placeholder = ('' + Math.random()).slice(2, 11)
+	var placeholderReg=new RegExp(placeholder,'gm')
+	var holderExp = exp.replace(/(['"])([\s\S]+?)(["'])/gm, function(mexp, fquito, value, lquito) {
+		value = value.replace(/\s+/gm, placeholder)
+		return fquito + value + lquito
+	})
+	holderExp = holderExp.split(/\s+/gm)
+	return holderExp.map(function(item) {
+		if (/=/.test(item)) {
+			return item.replace(placeholderReg, " ")
+		} else {
+			return item + '=""'
+		}
+	}).join(' ')
+}
+
 htmlAST.DOCUMENTNODE = DOCUMENTNODE
 htmlAST.ELEMENTNODE = ELEMENTNODE
 htmlAST.TEXTNODE = TEXTNODE
@@ -180,7 +199,7 @@ var html = `
          <title>html ast parser</title>
        </head>
        <body>
-         <div class="header box" id="h">header</div>
+         <div data-class class="header box" data-id id="h" style>header</div>
          <div class="container">
             <p>I am container</p>
             <a href="https://v.qq.com"><img src=""></img></a>
